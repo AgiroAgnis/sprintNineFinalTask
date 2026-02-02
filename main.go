@@ -14,98 +14,82 @@ const (
 
 // generateRandomElements generates random elements.
 func generateRandomElements(size int) []int {
-	// ваш код здесь
 	if size <= 0 {
-		return []int{}
+		return nil
 	}
 
-	s := make([]int, 0, size)
+	data := make([]int, size)
 	for i := 0; i < size; i++ {
-		s = append(s, rand.Intn(10000))
+		data[i] = rand.Int()
 	}
-	return s
+
+	return data
 }
 
 // maximum returns the maximum number of elements.
 func maximum(data []int) int {
-	// ваш код здесь
 	if len(data) == 0 {
 		return 0
 	}
 
-	max := data[0]
-	for _, num := range data {
-		if num > max {
-			max = num
+	maxValue := data[0]
+	for _, value := range data[1:] {
+		if value > maxValue {
+			maxValue = value
 		}
 	}
-	return max
+
+	return maxValue
 }
 
-// maxChunks returns the maximum number of elements in a chunks.
+// maxChunks returns the maximum number of elements in chunks.
 func maxChunks(data []int) int {
-	// ваш код здесь
-
 	if len(data) == 0 {
 		return 0
 	}
 
-	chunkSize := (len(data) + CHUNKS - 1) / CHUNKS
-	maxValues := []int{}
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	chunks := CHUNKS
 	if len(data) < CHUNKS {
-		chunks = len(data)
+		return maximum(data)
 	}
 
-	for i := 0; i < chunks; i++ {
+	chunkSize := len(data) / CHUNKS
+	maxValues := make([]int, CHUNKS)
+
+	var wg sync.WaitGroup
+	wg.Add(CHUNKS)
+
+	for i := 0; i < CHUNKS; i++ {
 		start := i * chunkSize
 		end := start + chunkSize
-		if start >= len(data) {
-			break
-		}
-		if end > len(data) {
+
+		if i == CHUNKS-1 {
 			end = len(data)
 		}
 
-		wg.Add(1)
-		go func(start, end int) {
+		go func(index, start, end int) {
 			defer wg.Done()
-			m := maximum(data[start:end])
-			mu.Lock()
-			maxValues = append(maxValues, m)
-			mu.Unlock()
-		}(start, end)
+			maxValues[index] = maximum(data[start:end])
+		}(i, start, end)
 	}
-	wg.Wait()
 
-	if len(maxValues) == 0 {
-		return 0
-	}
+	wg.Wait()
 
 	return maximum(maxValues)
 }
 
 func main() {
-	fmt.Printf("Генерируем %d целых чисел", SIZE)
-	// ваш код здесь
+	fmt.Printf("Генерируем %d целых чисел\n", SIZE)
 	data := generateRandomElements(SIZE)
 
 	fmt.Println("Ищем максимальное значение в один поток")
-	// ваш код здесь
 	start := time.Now()
-	max := maximum(data)
+	maxValue := maximum(data)
 	elapsed := time.Since(start).Microseconds()
-
-	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d mcs\n", max, elapsed)
+	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d mcs\n", maxValue, elapsed)
 
 	fmt.Printf("Ищем максимальное значение в %d потоков\n", CHUNKS)
-	// ваш код здесь
 	start = time.Now()
-	max = maxChunks(data)
+	maxValue = maxChunks(data)
 	elapsed = time.Since(start).Microseconds()
-
-	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d mcs\n", max, elapsed)
+	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d mcs\n", maxValue, elapsed)
 }
